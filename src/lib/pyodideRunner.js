@@ -32,16 +32,29 @@ export async function runPythonCode(code, outputCallback) {
     window.pyide_print = (msg) => outputCallback(msg);
     window.pyide_prompt = (msg) => window.prompt(msg || "Python Input:");
 
-    // Inject our custom input handler into Python builtins
+    // Inject our custom input handler and custom stdout into Python
     const patchCode = `
 import builtins
+import sys
 import js
 
+class CustomStdout:
+    def write(self, s):
+        js.pyide_print(str(s))
+    def flush(self):
+        pass
+
+# Route ALL stdout and stderr through our JS callback accurately
+sys.stdout = CustomStdout()
+sys.stderr = CustomStdout()
+
 def custom_input(prompt=""):
+    # Print the prompt precisely as provided
     js.pyide_print(str(prompt))
     res = js.pyide_prompt(str(prompt))
     if res is None:
         raise EOFError()
+    # Print the user's input followed by a newline (like a real terminal)
     js.pyide_print(res + "\\n")
     return res
 
@@ -49,10 +62,7 @@ builtins.input = custom_input
 `;
     await pyodideInstance.runPythonAsync(patchCode);
 
-    // Pyodide allows setting sys.stdout and sys.stderr handlers directly
-    pyodideInstance.setStdout({ batched: (msg) => outputCallback(msg + "\\n") });
-    pyodideInstance.setStderr({ batched: (msg) => outputCallback("ERROR: " + msg + "\\n") });
-
+    // Run the user's code
     await pyodideInstance.runPythonAsync(code);
   } catch (error) {
     outputCallback(`\\n${error.toString()}\\n`);
