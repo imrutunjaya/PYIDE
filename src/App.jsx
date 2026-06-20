@@ -10,7 +10,7 @@ import { lessons as initialLessons } from './data/lessons';
 import { books } from './data/books';
 import { initPyodide, runPythonCode } from './lib/pyodideRunner';
 import { generateNextLesson } from './lib/aiTeacher';
-import { ChevronLeft, ChevronRight, BrainCircuit, Book } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BrainCircuit, Book, BookOpen } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -21,16 +21,16 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [isPyodideReady, setIsPyodideReady] = useState(false);
   const [activeTab, setActiveTab] = useState('theory');
-  
   // Dual-Mode Architecture States
   const [isAiTeacherActive, setIsAiTeacherActive] = useState(false); // Default to Book Mode
   const [activeBookId, setActiveBookId] = useState(books.length > 0 ? books[0].id : null);
-  
+  const [isReaderModeActive, setIsReaderModeActive] = useState(false);
+
   // Pro IDE States
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Open by default for books
   const [isLeftPaneOpen, setIsLeftPaneOpen] = useState(true); // Open by default for books
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
-  
+
   const [leftPaneWidth, setLeftPaneWidth] = useState(40); // percentage
   const [isDragging, setIsDragging] = useState(false);
 
@@ -126,6 +126,19 @@ function App() {
     setOpenMenu(openMenu === menuName ? null : menuName);
   };
 
+  const handleSaveFile = () => {
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'script.py';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setOpenMenu(null);
+  };
+
   const handleGenerateAiLesson = async () => {
     const apiKey = localStorage.getItem('gemini_api_key');
     if (!apiKey) {
@@ -137,7 +150,7 @@ function App() {
     try {
       const newLesson = await generateNextLesson(appLessons);
       setAppLessons(prev => [...prev, newLesson]);
-      
+
       // Auto-navigate to the new lesson and open panels so user can see it
       setActiveLessonId(newLesson.id);
       setCode(newLesson.initialCode);
@@ -145,7 +158,7 @@ function App() {
       setIsAiTeacherActive(true);
       setIsSidebarOpen(true);
       setIsLeftPaneOpen(true);
-      
+
     } catch (err) {
       alert("AI Generation failed: " + err.message);
       if (err.message.includes("API_KEY_MISSING") || err.message.includes("API Key")) {
@@ -165,15 +178,15 @@ function App() {
 
   return (
     <div className="app-container">
-      
+
       {/* API Key Modal */}
       {showApiKeyModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h2>AI Teacher Setup</h2>
             <p>To use the Infinite AI Teacher, you need a free Google Gemini API Key.</p>
-            <input 
-              type="password" 
+            <input
+              type="password"
               placeholder="Paste your Gemini API Key here..."
               value={tempApiKey}
               onChange={(e) => setTempApiKey(e.target.value)}
@@ -196,7 +209,7 @@ function App() {
       {!isAiTeacherActive && (
         <div className={`sidebar-wrapper ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
           <div className="sidebar-inner" style={{ display: 'flex', flexDirection: 'column' }}>
-            <BookSidebar 
+            <BookSidebar
               books={books}
               activeBookId={activeBookId}
               onSelectBook={setActiveBookId}
@@ -204,20 +217,20 @@ function App() {
           </div>
         </div>
       )}
-      
+
       <main className="main-content">
-        
+
         {/* IDE Menu Bar */}
         <div className="ide-menu-bar">
           <div className="ide-logo">PyIDE</div>
-          
+
           <div className="menu-item-container">
             <button className="menu-btn" onClick={(e) => handleMenuClick('File', e)}>File</button>
             {openMenu === 'File' && (
               <div className="menu-dropdown">
                 <div className="dropdown-item">New File</div>
                 <div className="dropdown-item">Open File...</div>
-                <div className="dropdown-item">Save</div>
+                <div className="dropdown-item" onClick={handleSaveFile}>Save Code</div>
               </div>
             )}
           </div>
@@ -258,9 +271,23 @@ function App() {
             )}
           </div>
 
+          {/* Reader Mode Button */}
+          {!isAiTeacherActive && (
+            <div className="menu-item-container reader-mode-menu">
+              <button 
+                className={`menu-btn ${isReaderModeActive ? 'active' : ''}`} 
+                onClick={() => setIsReaderModeActive(!isReaderModeActive)}
+                style={{ color: isReaderModeActive ? '#10b981' : '#cccccc' }}
+              >
+                <BookOpen size={14} style={{ marginRight: '4px', display: 'inline' }} />
+                {isReaderModeActive ? 'Exit Reader Mode' : 'Reader Mode'}
+              </button>
+            </div>
+          )}
+
           <div className="menu-item-container ai-teacher-menu">
-            <button 
-              className={`menu-btn ai-btn ${isAiTeacherActive ? 'active' : ''}`} 
+            <button
+              className={`menu-btn ai-btn ${isAiTeacherActive ? 'active' : ''}`}
               onClick={(e) => handleMenuClick('AITeacher', e)}
               style={{ color: isAiTeacherActive ? '#a855f7' : '#cccccc' }}
             >
@@ -287,13 +314,13 @@ function App() {
         </div>
 
         <div className="split-pane">
-          
+
           {/* Conditionally Rendered Left Pane */}
           {isLeftPaneOpen && (
             <>
               <div 
                 className="left-pane" 
-                style={{ width: `${leftPaneWidth}%` }}
+                style={{ width: isReaderModeActive ? '100%' : `${leftPaneWidth}%` }}
               >
                 {!isAiTeacherActive ? (
                   // Book Viewer Mode
@@ -305,22 +332,22 @@ function App() {
                       <div className="progress-bar" style={{ width: `${progressPercent}%` }}></div>
                       <span className="progress-text">Lesson {currentIndex + 1} of {appLessons.length}</span>
                     </div>
-                    
+
                     <div className="tabs">
-                      <button 
+                      <button
                         className={`tab-btn ${activeTab === 'theory' ? 'active-tab' : ''}`}
                         onClick={() => setActiveTab('theory')}
                       >
                         Topic Overview
                       </button>
-                      <button 
+                      <button
                         className={`tab-btn ${activeTab === 'walkthrough' ? 'active-tab-walkthrough' : ''}`}
                         onClick={() => setActiveTab('walkthrough')}
                       >
                         Walkthrough
                       </button>
                     </div>
-                    
+
                     <div className="tab-content">
                       {activeTab === 'theory' ? (
                         <TheoryPanel lesson={activeLesson} />
@@ -328,7 +355,7 @@ function App() {
                         <div className="walkthrough-tab">
                           <div className="walkthrough-header">
                             <h2 className="walkthrough-title">Program Walkthrough</h2>
-                            <button 
+                            <button
                               onClick={() => {
                                 if (activeLesson.preWrittenCode) {
                                   setCode(activeLesson.preWrittenCode);
@@ -340,7 +367,7 @@ function App() {
                               Copy Code
                             </button>
                           </div>
-                          <LineWalkthrough 
+                          <LineWalkthrough
                             code={activeLesson.preWrittenCode}
                             explanations={activeLesson.lineExplanations}
                             howToStart={activeLesson.howToStart}
@@ -350,21 +377,21 @@ function App() {
                     </div>
 
                     <div className="lesson-navigation">
-                      <button 
-                        className="nav-btn prev-btn" 
+                      <button
+                        className="nav-btn prev-btn"
                         onClick={() => !isFirst && handleLessonChange(appLessons[currentIndex - 1].id)}
                         disabled={isFirst}
                       >
                         <ChevronLeft size={20} /> Prev
                       </button>
-                      <button 
-                        className="nav-btn next-btn" 
+                      <button
+                        className="nav-btn next-btn"
                         onClick={() => {
                           if (!isLast) handleLessonChange(appLessons[currentIndex + 1].id);
                           else handleGenerateAiLesson();
                         }}
                       >
-                        {isLast ? (isAiLoading ? "Generating..." : "Generate Next Level ✨") : "Next"} 
+                        {isLast ? (isAiLoading ? "Generating..." : "Generate Next Level ✨") : "Next"}
                         {!isLast && <ChevronRight size={20} />}
                       </button>
                     </div>
@@ -373,27 +400,31 @@ function App() {
               </div>
 
               {/* Resizer Handle */}
-              <div 
-                className="resizer"
-                onMouseDown={startDragging}
-              ></div>
+              {!isReaderModeActive && (
+                <div 
+                  className="resizer"
+                  onMouseDown={startDragging}
+                ></div>
+              )}
             </>
           )}
-          
+
           {/* Right Pane */}
-          <div 
-            className="right-pane" 
-            style={{ width: isLeftPaneOpen ? `${100 - leftPaneWidth}%` : '100%' }}
-          >
-            <CodeEditor 
-              code={code} 
-              setCode={setCode} 
-              onRun={handleRunCode} 
-              isRunning={isRunning || !isPyodideReady} 
-            />
-            {/* Conditional Terminal rendering */}
-            {isTerminalOpen && <Terminal output={output} />}
-          </div>
+          {!isReaderModeActive && (
+            <div 
+              className="right-pane" 
+              style={{ width: isLeftPaneOpen ? `${100 - leftPaneWidth}%` : '100%' }}
+            >
+              <CodeEditor 
+                code={code} 
+                setCode={setCode} 
+                onRun={handleRunCode} 
+                isRunning={isRunning || !isPyodideReady} 
+              />
+              {/* Conditional Terminal rendering */}
+              {isTerminalOpen && <Terminal output={output} />}
+            </div>
+          )}
         </div>
       </main>
     </div>

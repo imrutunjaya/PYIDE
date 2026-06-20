@@ -13,7 +13,7 @@ The student has just completed a series of interactive Python micro-lessons.
 Here are the exact topics they have learned so far:
 [${learnedTopics}]
 
-Your task is to dynamically generate the NEXT logical advanced topic for them to learn. It MUST be a brand new topic they haven't seen yet (e.g., Error Handling (try/except), File I/O, List Comprehensions, Lambda functions, Generators, Decorators, etc).
+Your task is to dynamically generate the NEXT logical advanced topic for them to learn. It MUST be a brand new topic they haven't seen yet.
 
 You must return ONLY a raw JSON object that strictly follows this interface. Do not include markdown blocks or any other text.
 {
