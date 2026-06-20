@@ -10,7 +10,7 @@
   transition: width 0.3s ease;
   overflow: hidden;
   flex-shrink: 0;
-  background-color: var(--panel-bg);
+  background-color: var(--bg-color);
   border-right: 1px solid var(--border-color);
 }
 
@@ -43,9 +43,7 @@
 .sidebar-header h2 {
   font-size: 1.25rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #e879f9;
   margin-bottom: 4px;
 }
 
@@ -80,9 +78,9 @@
 }
 
 .nav-item.active {
-  background-color: rgba(59, 130, 246, 0.1);
+  background-color: #1e1e24;
   color: var(--text-primary);
-  border-right: 3px solid var(--accent-color);
+  border-left: 3px solid var(--accent-color);
 }
 
 .icon-wrapper {
@@ -330,7 +328,7 @@
 /* Terminal */
 .terminal-container {
   height: 30%;
-  background-color: #0d1117;
+  background-color: #121212;
   display: flex;
   flex-direction: column;
 }
@@ -854,7 +852,7 @@
 
 /* Live Translator UI */
 .live-translator-panel {
-  background-color: var(--panel-bg);
+  background-color: #000000;
   border-top: 1px solid var(--border-color);
   padding: 16px;
   min-height: 80px;
@@ -914,7 +912,7 @@ body.dragging iframe {
 .ide-menu-bar {
   display: flex;
   align-items: center;
-  background-color: #252526;
+  background-color: #1a1a1a;
   border-bottom: 1px solid #333333;
   padding: 0 8px;
   height: 35px;
@@ -924,7 +922,7 @@ body.dragging iframe {
 
 .ide-logo {
   font-weight: bold;
-  color: #007acc;
+  color: #e879f9;
   margin-right: 16px;
   font-size: 0.9rem;
   letter-spacing: 0.5px;
