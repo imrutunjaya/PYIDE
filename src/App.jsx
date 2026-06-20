@@ -9,7 +9,7 @@ import BookViewer from './components/BookViewer';
 import { lessons as initialLessons } from './data/lessons';
 import { books } from './data/books';
 import { initPyodide, runPythonCode } from './lib/pyodideRunner';
-import { generateNextLesson } from './lib/aiTeacher';
+import { generateNextLesson, explainPythonError } from './lib/aiTeacher';
 import { ChevronLeft, ChevronRight, BrainCircuit, Book, BookOpen } from 'lucide-react';
 import './App.css';
 
@@ -41,6 +41,10 @@ function App() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState("");
+  
+  // AI Error Explainer States
+  const [errorExplanation, setErrorExplanation] = useState(null);
+  const [isExplainingError, setIsExplainingError] = useState(false);
 
   const activeLesson = appLessons.find(l => l.id === activeLessonId) || appLessons[0];
   const currentIndex = appLessons.findIndex(l => l.id === activeLessonId);
@@ -115,9 +119,30 @@ function App() {
     setIsTerminalOpen(true); // Auto-open terminal on run
     setIsRunning(true);
     setOutput('');
-    await runPythonCode(code, (msg) => {
+    setErrorExplanation(null);
+    setIsExplainingError(false);
+
+    const result = await runPythonCode(code, (msg) => {
       setOutput((prev) => prev + msg);
     });
+
+    if (result && !result.success && result.error) {
+      // An error occurred! Trigger AI explanation if API key is present
+      const apiKey = localStorage.getItem('gemini_api_key');
+      if (apiKey) {
+        setIsExplainingError(true);
+        try {
+          const explanation = await explainPythonError(code, result.error);
+          setErrorExplanation(explanation);
+        } catch (err) {
+          console.error("Failed to explain error:", err);
+          setErrorExplanation("Could not generate explanation. Ensure your API key is valid.");
+        } finally {
+          setIsExplainingError(false);
+        }
+      }
+    }
+
     setIsRunning(false);
   };
 
@@ -422,7 +447,13 @@ function App() {
                 isRunning={isRunning || !isPyodideReady} 
               />
               {/* Conditional Terminal rendering */}
-              {isTerminalOpen && <Terminal output={output} />}
+              {isTerminalOpen && (
+                <Terminal 
+                  output={output} 
+                  errorExplanation={errorExplanation}
+                  isExplainingError={isExplainingError}
+                />
+              )}
             </div>
           )}
         </div>

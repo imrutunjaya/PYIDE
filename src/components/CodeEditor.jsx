@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { Play, Sparkles } from 'lucide-react';
+import { Play, Sparkles, Undo2, Redo2 } from 'lucide-react';
 import { pythonDocs } from '../data/pythonDocs';
 import { translatePythonLine } from '../lib/liveTranslator';
 
@@ -21,6 +21,18 @@ export default function CodeEditor({ code, setCode, onRun, isRunning }) {
     setCode(value || "");
     if (editorRef.current) {
       updateTranslation(editorRef.current);
+    }
+  };
+
+  const handleUndo = () => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'undo', null);
+    }
+  };
+
+  const handleRedo = () => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'redo', null);
     }
   };
 
@@ -73,14 +85,23 @@ export default function CodeEditor({ code, setCode, onRun, isRunning }) {
     <div className="editor-container" style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
       <div className="editor-header">
         <span className="file-name">main.py</span>
-        <button 
-          className={`run-button ${isRunning ? 'running' : ''}`} 
-          onClick={onRun}
-          disabled={isRunning}
-        >
-          <Play size={16} />
-          {isRunning ? 'Running...' : 'Run Code'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button className="editor-icon-btn" onClick={handleUndo} title="Undo">
+            <Undo2 size={16} />
+          </button>
+          <button className="editor-icon-btn" onClick={handleRedo} title="Redo">
+            <Redo2 size={16} />
+          </button>
+          <button 
+            className={`run-button ${isRunning ? 'running' : ''}`} 
+            onClick={onRun}
+            disabled={isRunning}
+            style={{ marginLeft: '8px' }}
+          >
+            <Play size={16} />
+            {isRunning ? 'Running...' : 'Run Code'}
+          </button>
+        </div>
       </div>
       <div className="editor-wrapper" style={{ flex: 1, position: 'relative', minHeight: 0 }}>
         <Editor

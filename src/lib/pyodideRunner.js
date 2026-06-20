@@ -64,8 +64,11 @@ builtins.input = custom_input
 
     // Run the user's code
     await pyodideInstance.runPythonAsync(code);
+    return { success: true };
   } catch (error) {
-    outputCallback(`\\n${error.toString()}\\n`);
+    const errorString = error.toString();
+    outputCallback(`\\n${errorString}\\n`);
+    return { success: false, error: errorString };
   } finally {
     // Clean up globals
     delete window.pyide_print;

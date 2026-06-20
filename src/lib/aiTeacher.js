@@ -68,3 +68,58 @@ You must return ONLY a raw JSON object that strictly follows this interface. Do 
     throw error;
   }
 }
+
+export async function explainPythonError(code, errorMessage) {
+  const apiKey = localStorage.getItem('gemini_api_key');
+  if (!apiKey) {
+    throw new Error("API_KEY_MISSING");
+  }
+
+  const prompt = `
+You are an expert Python AI Teacher helping a beginner student.
+They just ran the following Python code and got an error.
+
+CODE:
+\`\`\`python
+${code}
+\`\`\`
+
+ERROR:
+\`\`\`
+${errorMessage}
+\`\`\`
+
+Explain exactly what this error means in very simple, plain English (no jargon).
+Then, explicitly tell them how they can fix it.
+Format your response with a friendly tone. Use markdown.
+Do NOT give them the entire rewritten code, just tell them which line is wrong and what to change.
+`;
+
+  try {
+    const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.4,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to connect to AI Teacher.");
+    }
+
+    const data = await response.json();
+    return data.candidates[0].content.parts[0].text.trim();
+  } catch (error) {
+    console.error("AI Error Explanation failed:", error);
+    throw error;
+  }
+}
+

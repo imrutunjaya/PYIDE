@@ -1,27 +1,69 @@
-import React, { useRef, useEffect } from 'react';
-import { Terminal as TerminalIcon } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Terminal as TerminalIcon, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
-export default function Terminal({ output }) {
+export default function Terminal({ output, errorExplanation, isExplainingError }) {
   const endOfOutputRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('console');
 
-  // Auto-scroll to bottom when output changes
+  // Auto-switch to explainer tab when an error explanation starts loading or finishes
   useEffect(() => {
-    endOfOutputRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [output]);
+    if (isExplainingError || errorExplanation) {
+      setActiveTab('explainer');
+    } else {
+      setActiveTab('console');
+    }
+  }, [isExplainingError, errorExplanation]);
+
+  // Auto-scroll to bottom when output changes in console tab
+  useEffect(() => {
+    if (activeTab === 'console') {
+      endOfOutputRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [output, activeTab]);
 
   return (
     <div className="terminal-container">
-      <div className="terminal-header">
-        <TerminalIcon size={16} />
-        <span>Output Console</span>
-      </div>
-      <div className="terminal-output">
-        {output ? (
-          <pre>{output}</pre>
-        ) : (
-          <div className="terminal-placeholder">Run your code to see output here...</div>
+      <div className="terminal-tabs-header">
+        <button 
+          className={`term-tab-btn ${activeTab === 'console' ? 'active' : ''}`}
+          onClick={() => setActiveTab('console')}
+        >
+          <TerminalIcon size={14} /> Output Console
+        </button>
+        
+        {(errorExplanation || isExplainingError) && (
+          <button 
+            className={`term-tab-btn explainer-tab ${activeTab === 'explainer' ? 'active' : ''}`}
+            onClick={() => setActiveTab('explainer')}
+          >
+            <Sparkles size={14} /> AI Explainer
+          </button>
         )}
-        <div ref={endOfOutputRef} />
+      </div>
+
+      <div className="terminal-content-area">
+        {activeTab === 'console' ? (
+          <div className="terminal-output">
+            {output ? (
+              <pre>{output}</pre>
+            ) : (
+              <div className="terminal-placeholder">Run your code to see output here...</div>
+            )}
+            <div ref={endOfOutputRef} />
+          </div>
+        ) : (
+          <div className="terminal-explainer-output markdown-body" style={{ padding: '16px', overflowY: 'auto', height: '100%' }}>
+            {isExplainingError ? (
+              <div className="flex items-center gap-2 text-yellow-400 font-medium">
+                <Sparkles className="animate-pulse" size={16} /> 
+                Analyzing error...
+              </div>
+            ) : (
+              <ReactMarkdown>{errorExplanation || "No errors to explain."}</ReactMarkdown>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
