@@ -18,6 +18,44 @@ export function translatePythonLine(line) {
     return `Error! You are trying to create an ${typeName} named '${varName}' with the value ${value}. In Python, you don't need to write '${type}' before the variable! Just write: ${varName} = ${value}`;
   }
 
+  // --- NEW SYNTAX ERROR CHECKS ---
+  
+  if (/^print\s+["'](.*)["']$/.test(trimmed)) {
+    return "Syntax Error! In Python 3, 'print' is a function. You must use parentheses: print(...)";
+  }
+  if (/[a-zA-Z_]\w*\+\+/.test(trimmed)) {
+    return "Syntax Error! Python doesn't have '++'. Use '+= 1' instead.";
+  }
+  if (/[a-zA-Z_]\w*--/.test(trimmed)) {
+    return "Syntax Error! Python doesn't have '--'. Use '-= 1' instead.";
+  }
+  if (trimmed.includes(" && ")) {
+    return "Syntax Error! In Python, use the word 'and' instead of '&&'.";
+  }
+  if (trimmed.includes(" || ")) {
+    return "Syntax Error! In Python, use the word 'or' instead of '||'.";
+  }
+  if (/\btrue\b/.test(trimmed)) {
+    return "Syntax Hint: In Python, 'True' must start with a capital 'T'!";
+  }
+  if (/\bfalse\b/.test(trimmed)) {
+    return "Syntax Hint: In Python, 'False' must start with a capital 'F'!";
+  }
+  if (/\bnull\b/.test(trimmed)) {
+    return "Syntax Hint: In Python, use 'None' instead of 'null'.";
+  }
+  if (/^(if|while)\s+[a-zA-Z_]\w*\s*=[^=].*:?$/.test(trimmed)) {
+     return "Syntax Error! You are using '=' (assignment) inside a condition. You probably meant '==' (equality check).";
+  }
+  const blockStartMatch = trimmed.match(/^(if|for|while|def|class|elif|else)\b(.*)$/);
+  if (blockStartMatch) {
+    const keyword = blockStartMatch[1];
+    const rest = blockStartMatch[2];
+    if (!trimmed.endsWith(":") && rest.trim().length > 2) {
+      return `Looks like you are writing a '${keyword}' block. Don't forget to put a colon ':' at the very end!`;
+    }
+  }
+
   // 0.5 standalone type typing
   if (trimmed === "int") return "You are writing 'int'. This stands for Integer (a whole number).";
   if (trimmed === "str") return "You are writing 'str'. This stands for String (text wrapped in quotes).";
