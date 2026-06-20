@@ -41,6 +41,7 @@ function App() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState("");
+  const [apiKeySuccessCallback, setApiKeySuccessCallback] = useState(null);
   
   // AI Error Explainer States
   const [errorExplanation, setErrorExplanation] = useState(null);
@@ -140,10 +141,21 @@ function App() {
         } finally {
           setIsExplainingError(false);
         }
+      } else {
+        // No API Key - show the missing API key message in the Explainer tab
+        setErrorExplanation("NO_API_KEY");
       }
     }
 
     setIsRunning(false);
+  };
+
+  const handleEnableAiForError = () => {
+    setShowApiKeyModal(true);
+    setApiKeySuccessCallback(() => () => {
+      // Re-run the code to automatically fetch the error explanation now that we have a key
+      handleRunCode();
+    });
   };
 
   const handleMenuClick = (menuName, e) => {
@@ -168,6 +180,7 @@ function App() {
     const apiKey = localStorage.getItem('gemini_api_key');
     if (!apiKey) {
       setShowApiKeyModal(true);
+      setApiKeySuccessCallback(() => handleGenerateAiLesson);
       return;
     }
 
@@ -198,7 +211,10 @@ function App() {
   const saveApiKey = () => {
     localStorage.setItem('gemini_api_key', tempApiKey);
     setShowApiKeyModal(false);
-    handleGenerateAiLesson();
+    if (apiKeySuccessCallback) {
+      apiKeySuccessCallback();
+      setApiKeySuccessCallback(null);
+    }
   };
 
   return (
@@ -217,10 +233,13 @@ function App() {
               onChange={(e) => setTempApiKey(e.target.value)}
               className="api-input"
             />
-            <div className="modal-buttons">
-              <button onClick={() => setShowApiKeyModal(false)} className="cancel-btn">Cancel</button>
-              <button onClick={saveApiKey} className="save-btn">Save & Generate</button>
-            </div>
+              <div className="modal-buttons">
+                <button onClick={() => {
+                  setShowApiKeyModal(false);
+                  setApiKeySuccessCallback(null);
+                }} className="cancel-btn">Cancel</button>
+                <button onClick={saveApiKey} className="save-btn">Save & Continue</button>
+              </div>
             <p className="modal-help">
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">
                 Get a free API key here
@@ -452,6 +471,7 @@ function App() {
                   output={output} 
                   errorExplanation={errorExplanation}
                   isExplainingError={isExplainingError}
+                  onEnableAi={handleEnableAiForError}
                 />
               )}
             </div>
