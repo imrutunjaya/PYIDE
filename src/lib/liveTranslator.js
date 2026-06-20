@@ -92,6 +92,15 @@ export function translatePythonLine(line) {
     let content = printMatch[1];
     if (content.endsWith(")")) content = content.slice(0, -1); // remove trailing paren if matched
     if (!content) return "You are telling the computer to print something to the screen. Type what you want to show inside the parentheses.";
+    
+    if (!content.startsWith('"') && !content.startsWith("'") && isNaN(content)) {
+      if (/^[a-zA-Z_]\w*$/.test(content)) {
+        return `You are printing '${content}'. If '${content}' is text, put quotes around it like "${content}". If it's a variable, make sure you created it!`;
+      } else if (/^[a-zA-Z_]\w*(\s+[a-zA-Z_]\w*)+$/.test(content)) {
+        return `Syntax Error! You are trying to print text: ${content}. You must put quotes around it like "${content}"!`;
+      }
+    }
+    
     return `You are telling the computer to show ${content} on the screen.`;
   }
 
